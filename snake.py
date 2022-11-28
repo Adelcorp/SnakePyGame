@@ -1,4 +1,5 @@
 import random
+import time
 import sys
 import pygame
 from pygame.math import Vector2
@@ -91,10 +92,6 @@ class SNAKE:
     def add_block(self):
         self.new_block = True
 
-    def reset(self):
-        self.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
-        self.direction = Vector2(0, 0)
-
 
 class FRUIT:
 
@@ -113,14 +110,15 @@ class FRUIT:
 
 class MAIN:
     def __init__(self):
-        self.speed = 150
         self.snake = SNAKE()
         self.fruit = FRUIT()
 
     def update(self):
-        self.snake.move_snake()
-        self.check_collision()
-        self.check_fail()
+        self.draw_grass()
+        if self.snake.direction != Vector2(0, 0):
+            self.snake.move_snake()
+            self.check_collision()
+            self.check_fail()
 
     def draw_elements(self):
         self.draw_grass()
@@ -130,7 +128,6 @@ class MAIN:
 
     def check_collision(self):
         if self.fruit.pos == self.snake.body[0]:
-            self.speed -= 10
             self.fruit.randomize()
             self.snake.add_block()
         for block in self.snake.body[1:]:
@@ -145,7 +142,26 @@ class MAIN:
                 self.game_over()
 
     def game_over(self):
-        self.snake.reset()
+        self.reset()
+
+    def reset(self):
+        time.sleep(0.05)
+        self.snake.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
+        self.snake.direction = Vector2(0, 0)
+
+        h = True
+        while h is True:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        h = False
+                        break
+                    if event.key == pygame.K_ESCAPE:
+                        event.type = pygame.QUIT
+                elif event.type == pygame.QUIT:
+                    pygame.quit()
+            self.draw_end_screen()
+            pygame.display.update()
 
     def draw_grass(self):
         grass_color = (167, 209, 61)
@@ -160,6 +176,36 @@ class MAIN:
                     if col % 2 != 0:
                         grass_rect = pygame.Rect(col * cell_size, row * cell_size, cell_size, cell_size)
                         pygame.draw.rect(screen, grass_color, grass_rect)
+
+    def st_grass_draw(self):
+        grass = pygame.image.load('snake/grasstoppres_st.png')
+        for col in range(cell_number):
+            for colA1 in range(cell_number):
+                rect = pygame.Rect(col * cell_size, colA1 * cell_size, cell_size, cell_size)
+                screen.blit(grass, rect)
+
+    def draw_end_screen(self):
+        big_apple = pygame.image.load('snake/big_apple.png')
+        wr = 'Your score:'
+        wrd = str(len(self.snake.body) - 3)
+        wrdd = 'Tap space to try again'
+        exit_message = 'Tap esc to finish'
+
+        font = pygame.font.Font(None, 50)
+
+        score_sur = font.render(wr, True, (56, 74, 12))
+        score_sur_d = font.render(wrd, True, (56, 74, 12))
+        score_sur_dd = font.render(wrdd, True, (56, 74, 12))
+        score_sur_ddd = font.render(exit_message, True, (56, 74, 12))
+
+        rect_ = big_apple.get_rect(center=(400, 400))
+        self.st_grass_draw()
+        screen.blit(big_apple, rect_)
+        screen.blit(score_sur, (300, 400))
+        screen.blit(score_sur_d, (380, 440))
+        screen.blit(score_sur_dd, (240, 480))
+        screen.blit(score_sur_ddd, (280, 520))
+        pygame.display.update()
 
     def draw_score(self):
         score_text = str(len(self.snake.body) - 3)
@@ -188,7 +234,7 @@ game_font = pygame.font.Font(None, 30)
 main_game = MAIN()
 
 SCREEN_UPDATE = pygame.USEREVENT
-pygame.time.set_timer(SCREEN_UPDATE, main_game.speed)
+pygame.time.set_timer(SCREEN_UPDATE, 150)
 
 while True:
 
