@@ -234,37 +234,59 @@ pygame.init()
 cell_size = 40
 cell_number = 20
 screen = pygame.display.set_mode((cell_number * cell_size, cell_number * cell_size))
-clock = pygame.time.Clock()
 apple = pygame.image.load('snake/apple.png').convert_alpha()
 game_font = pygame.font.Font(None, 30)
+speed = 200
 
-main_game = MAIN()
 
-SCREEN_UPDATE = pygame.USEREVENT
-pygame.time.set_timer(SCREEN_UPDATE, 150)
+def set_difficulty(value, difficulty):
+    global speed
+    speed = difficulty * 50
+    print(difficulty)
 
-while True:
 
-    for event in pygame.event.get():
+def start_the_game():
+    global speed
+    clock = pygame.time.Clock()
 
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == SCREEN_UPDATE:
-            main_game.update()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP and main_game.snake.direction.y != 1:
-                main_game.snake.direction = Vector2(0, -1)
-            elif event.key == pygame.K_DOWN and main_game.snake.direction.y != -1:
-                main_game.snake.direction = Vector2(0, 1)
-            elif event.key == pygame.K_RIGHT and main_game.snake.direction.x != -1:
-                main_game.snake.direction = Vector2(1, 0)
-            elif event.key == pygame.K_LEFT and main_game.snake.direction.x != 1:
-                main_game.snake.direction = Vector2(-1, 0)
-            elif event.key == pygame.K_ESCAPE:
-                event.type = pygame.QUIT
+    main_game = MAIN()
 
-    screen.fill((150, 202, 50))
-    main_game.draw_elements()
-    pygame.display.update()
-    clock.tick(5 + main_game.speed)
+    SCREEN_UPDATE = pygame.USEREVENT
+    pygame.time.set_timer(SCREEN_UPDATE, speed)
+
+    while True:
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == SCREEN_UPDATE:
+                main_game.update()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and main_game.snake.direction.y != 1:
+                    main_game.snake.direction = Vector2(0, -1)
+                elif event.key == pygame.K_DOWN and main_game.snake.direction.y != -1:
+                    main_game.snake.direction = Vector2(0, 1)
+                elif event.key == pygame.K_RIGHT and main_game.snake.direction.x != -1:
+                    main_game.snake.direction = Vector2(1, 0)
+                elif event.key == pygame.K_LEFT and main_game.snake.direction.x != 1:
+                    main_game.snake.direction = Vector2(-1, 0)
+                elif event.key == pygame.K_ESCAPE:
+                    event.type = pygame.QUIT
+
+        screen.fill((150, 202, 50))
+        main_game.draw_elements()
+        pygame.display.update()
+        clock.tick(5 + main_game.speed)
+
+
+menu = pygame_menu.Menu('Snake Game', 400, 300,
+                        theme=pygame_menu.themes.THEME_SOLARIZED)
+
+menu.add.text_input('Name :', default='Player 1')
+menu.add.selector('Difficulty :', [('Easy', 5), ('Normal', 4), ('Hard', 3), ('Pro', 2), ('Seriously?', 1)],
+                  onchange=set_difficulty)
+menu.add.button('Start', start_the_game)
+menu.add.button('Quit', pygame_menu.events.EXIT)
+menu.mainloop(screen)
