@@ -13,6 +13,7 @@ class SNAKE:
         self.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
         self.direction = Vector2(0, 0)
         self.new_block = False
+        self.score = 0
 
         self.head_up = pygame.image.load('snake/up_head.png').convert_alpha()
         self.head_down = pygame.image.load('snake/down_head.png').convert_alpha()
@@ -94,21 +95,27 @@ class SNAKE:
 
     def add_block(self):
         self.new_block = True
-
+        self.score += 1
 
 class FRUIT:
 
     def __init__(self):
+        self.grape = pygame.image.load('snake/grape.png').convert_alpha()
+        self.apple = pygame.image.load('snake/apple.png').convert_alpha()
         self.randomize()
 
     def draw_fruit(self):
         fruit_rect = pygame.Rect(int(self.pos.x * cell_size), int(self.pos.y * cell_size), cell_size, cell_size)
-        screen.blit(apple, fruit_rect)
+        screen.blit(self.fruit, fruit_rect)
 
     def randomize(self):
         self.x = random.randint(0, cell_number - 1)
         self.y = random.randint(0, cell_number - 1)
         self.pos = Vector2(self.x, self.y)
+        if random.randint(0, 3) == 0:
+            self.fruit = self.grape
+        else:
+            self.fruit = self.apple
 
 
 class MAIN:
@@ -116,6 +123,7 @@ class MAIN:
         self.snake = SNAKE()
         self.fruit = FRUIT()
         self.speed = 5
+        self.score = 0
 
     def update(self):
         self.draw_grass()
@@ -132,9 +140,14 @@ class MAIN:
 
     def check_collision(self):
         if self.fruit.pos == self.snake.body[0]:
-            self.fruit.randomize()
-            self.snake.add_block()
-            self.speed += 3
+            if self.fruit.fruit == self.fruit.apple:
+                self.snake.add_block()
+                self.speed += 3
+            else:
+                self.snake.add_block()
+                self.snake.add_block()
+                self.snake.add_block()
+                self.speed += 6
         for block in self.snake.body[1:]:
             if block == self.fruit.pos:
                 self.fruit.randomize()
@@ -152,7 +165,7 @@ class MAIN:
 
     def reset(self):
         time.sleep(0.05)
-        self.score = str(len(self.snake.body) - 3)
+        self.score = str(self.snake.score)
         self.snake.body = [Vector2(5, 10), Vector2(4, 10), Vector2(3, 10)]
         self.snake.direction = Vector2(0, 0)
 
@@ -167,6 +180,7 @@ class MAIN:
                         event.type = pygame.QUIT
                 elif event.type == pygame.QUIT:
                     pygame.quit()
+            self.table(int(self.score))
             self.draw_end_screen()
             pygame.display.update()
 
@@ -212,10 +226,11 @@ class MAIN:
         screen.blit(score_sur_d, (380, 440))
         screen.blit(score_sur_dd, (240, 480))
         screen.blit(score_sur_ddd, (280, 520))
+        self.snake.score = 0
         pygame.display.update()
 
     def draw_score(self):
-        score_text = str(len(self.snake.body) - 3)
+        score_text = str(self.snake.score)
         score_surface = game_font.render(score_text, True, (56, 74, 12))
         score_x = int(cell_size * cell_number - 60)
         score_y = int(cell_size * cell_number - 40)
@@ -230,41 +245,81 @@ class MAIN:
         pygame.draw.rect(screen, (56, 74, 12), bg_rect, 2)
 
 
+    def table(self, res):
+        name = user_name.get_value()
+        dct = {}
+        with open('records.txt') as f:
+            f = f.read().split('\n')
+            for e in f:
+                e = e.split(':   ')
+                dct[e[0]] = int(e[1])
+        dct[name] = max(dct.get(name, -1), res)
+        f1 = sorted(dct.keys(), key=lambda a: dct[a], reverse=True)
+        with open('records.txt', 'w') as f:
+            t = 0
+            for e in f1[:5]:
+                t += 1
+                f.write(e + ':   ' + str(dct[e]))
+                if t != len(dct):
+                    f.write('\n')
+
+
 pygame.init()
 cell_size = 40
 cell_number = 20
 screen = pygame.display.set_mode((cell_number * cell_size, cell_number * cell_size))
-clock = pygame.time.Clock()
 apple = pygame.image.load('snake/apple.png').convert_alpha()
+
 game_font = pygame.font.Font(None, 30)
+speed = 200
 
-main_game = MAIN()
+def set_difficulty(value, difficulty):
+    global speed
+    speed = difficulty * 50
 
-SCREEN_UPDATE = pygame.USEREVENT
-pygame.time.set_timer(SCREEN_UPDATE, 150)
 
-while True:
+def start_the_game():
+    global speed
+    clock = pygame.time.Clock()
 
-    for event in pygame.event.get():
+    main_game = MAIN()
 
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == SCREEN_UPDATE:
-            main_game.update()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP and main_game.snake.direction.y != 1:
-                main_game.snake.direction = Vector2(0, -1)
-            elif event.key == pygame.K_DOWN and main_game.snake.direction.y != -1:
-                main_game.snake.direction = Vector2(0, 1)
-            elif event.key == pygame.K_RIGHT and main_game.snake.direction.x != -1:
-                main_game.snake.direction = Vector2(1, 0)
-            elif event.key == pygame.K_LEFT and main_game.snake.direction.x != 1:
-                main_game.snake.direction = Vector2(-1, 0)
-            elif event.key == pygame.K_ESCAPE:
-                event.type = pygame.QUIT
+    SCREEN_UPDATE = pygame.USEREVENT
+    pygame.time.set_timer(SCREEN_UPDATE, speed)
 
-    screen.fill((150, 202, 50))
-    main_game.draw_elements()
-    pygame.display.update()
-    clock.tick(5 + main_game.speed)
+    while True:
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == SCREEN_UPDATE:
+                main_game.update()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and main_game.snake.direction.y != 1:
+                    main_game.snake.direction = Vector2(0, -1)
+                elif event.key == pygame.K_DOWN and main_game.snake.direction.y != -1:
+                    main_game.snake.direction = Vector2(0, 1)
+                elif event.key == pygame.K_RIGHT and main_game.snake.direction.x != -1:
+                    main_game.snake.direction = Vector2(1, 0)
+                elif event.key == pygame.K_LEFT and main_game.snake.direction.x != 1:
+                    main_game.snake.direction = Vector2(-1, 0)
+                elif event.key == pygame.K_ESCAPE:
+                    event.type = pygame.QUIT
+
+        screen.fill((150, 202, 50))
+        main_game.draw_elements()
+        pygame.display.update()
+        clock.tick(5 + main_game.speed)
+
+
+menu = pygame_menu.Menu('Snake Game', 400, 300,
+                        theme=pygame_menu.themes.THEME_SOLARIZED)
+
+user_name = menu.add.text_input('Name :', default='Player 1')
+menu.add.selector('Difficulty :', [('Easy', 5), ('Normal', 4), ('Hard', 3), ('Pro', 2), ('Seriously?', 1)],
+                  onchange=set_difficulty)
+menu.add.button('Start', start_the_game)
+menu.add.button('Quit', pygame_menu.events.EXIT)
+menu.mainloop(screen)
